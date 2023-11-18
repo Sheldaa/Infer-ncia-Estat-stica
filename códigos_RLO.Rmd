@@ -1,0 +1,112 @@
+---
+title: "APLICAÇÃO - REGRESSÃO LOGÍSTICA ORDINAL"
+author: "Shelda Ramos e Emily Mendonça"
+date: "2023-11-17"
+output: html_document
+---
+
+```{r}
+library(foreign)
+library(ggplot2)
+library(MASS)
+```
+
+### Este documento não é um relatório formal, aqui estão apenas os códigos de aplicação e algumas interpretações.
+
+# EXEMPLO DE APLICAÇÃO
+### Conjunto de dados hipotéticos contendo uma variável de 3 níveis ("apply"). Os níveis "improvável", "um pouco provável" e "muito provável" são referentes a decisão de se candidatar a uma pós-graduação. Também há informações sobre a escolaridade dos pais, se a instituição de graduação é pública ou privada e as notas de performance ("gpa") do aluno. Portanto, essa aplicação deseja verificar os fatores que influenciam na decisão de se inscrever em uma pós-graduação.
+
+# OBJETIVO
+### Ajustar um modelo de regressão logística ordinal com as variáveis citadas.
+
+```{r}
+dat <- read.dta("https://stats.idre.ucla.edu/stat/data/ologit.dta")
+head(dat)
+str(dat)
+```
+
+### Estatísticas Descritivas
+```{r}
+lapply(dat[, c("apply", "pared", "public")], table)
+```
+
+
+```{r}
+ ftable(xtabs(~ public + apply + pared, data = dat))
+```
+
+
+
+
+
+### Em média, o gpa dos alunos é de 2,999.
+
+```{r}
+summary(dat$gpa)
+
+```
+
+
+```{r}
+sd(dat$gpa)
+```
+
+
+### Ajuste do modelo de regressão logística ordinal
+### Vale ressaltar que o modelo de regressão logística traz os resultados estimadores na forma logarítmica, mas para uma melhor interpretação, usaremos a exponenciação da variável.
+
+```{r}
+modelo <- polr(apply ~ pared + public + gpa, data = dat, Hess = TRUE)
+summary(modelo)
+```
+
+
+### Odds
+
+```{r}
+exp(coef(modelo))
+
+```
+
+### Convertendo os coeficientes em odds ratio. Para obter o OR e os intervalos de confiança, apenas exponenciamos as estimativas e os intervalos de confiança.
+
+```{r}
+exp(cbind(OR = coef(modelo), confint(modelo)))
+```
+
+### OR significa a razão de chances.
+
+### Para alunos cujos pais possuem pós-graduação a chance de serem mais prováveis de se inscreverem em uma pós-graduação é 2,85 vezes maior do que dos alunos cujo os pais não possuem pós-graduação.
+
+### Em relação a variável GPA, para cada variação unitária na variável GPA, aumenta em 1,85 as chances do aluno ser mais provável de se inscrever em uma pós graduação.
+
+
+### Agora em relação a instituição ser pública ou privada, utilizando a fórmula a seguir, temos um valor de aproximadamente 5,71%.
+```{r}
+((1-0.9429088)*100) #public
+```
+
+
+### Portanto, para alunos de escola pública, as chances de serem mais prováveis de concordar em se inscrever em uma pós graduação é 5,71% menor que dos alunos de escola privada.
+
+
+### Gráficos
+
+```{r}
+# Carregue a biblioteca ggplot2
+library(ggplot2)
+
+# Crie um gráfico de barras empilhadas para respostas "unlikely" e variável pared
+ggplot(dat, aes(x = pared, fill = apply)) +
+  geom_bar(position = "stack", stat = "count") +
+  labs(title = "Distribuição de Respostas 'Unlikely' por 'Pared'",
+       x = "Pared",
+       y = "Contagem")
+
+
+```
+
+
+
+### Referências
+#### Ordinal Logistic Regression | R Data Analysis Examples. Disponível em: <https://stats.oarc.ucla.edu/r/dae/ordinal-logistic-regression/>.
